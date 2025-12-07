@@ -1,5 +1,6 @@
 const core = require("@actions/core");
-const admin = require("firebase-admin");
+const initializeApp = require("firebase/app").initializeApp;
+const { getFirestore, getDoc, doc } = require('firebase/firestore/lite');
 
 
 // most @actions toolkit packages have async methods
@@ -11,22 +12,23 @@ async function run() {
     appId: core.getInput("appId")
   };
 
+  let app;
   try {
-    if (admin.apps.length === 0) {
-      admin.initializeApp(firebaseConfig);
-    }
+    app = initializeApp(firebaseConfig);
     console.log("app initialized")
   } catch (error) {
     console.log(error);
     console.log("cannot initialize app")
   }
 
-  const docValue = await admin.firestore()
-      .collection(core.getInput("collectionName"))
-      .doc(core.getInput("docName"))
-      .get()
+  const db = getFirestore(app);
 
-  console.log(docValue);
+  console.log("Used collection name " + core.getInput("collectionName"));
+  console.log("Used doc name " + core.getInput("docName"));
+
+  const docValueSnapshot = await getDoc(doc(db, core.getInput("collectionName"), core.getInput("docName")));
+  const docValue = docValueSnapshot.data()
+  console.log("Received data: " + JSON.stringify(docValue));
   core.setOutput("firestoreValue", JSON.stringify(docValue))
 }
 
